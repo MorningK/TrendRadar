@@ -235,32 +235,43 @@ def send_to_feishu(
             if not webhook_url.startswith('https://'):
                 print(f"  - 警告: webhook_url格式不正确: {webhook_url}")
             
-            # 使用main_backup.py中的飞书推送格式
-            message = {
-                "msg_type": "interactive",
-                "card": {
-                    "config": {
-                        "wide_screen_mode": True,
-                        "enable_forward": True
-                    },
-                    "header": {
-                        "title": {
-                            "tag": "plain_text",
-                            "content": f"📰 {report_type}报告"
+            if msg_type == "card":
+                # 卡片消息格式
+                print(f"飞书消息将以卡片形式发送 [{report_type}]")
+                message = {
+                    "msg_type": "interactive",
+                    "card": {
+                        "config": {
+                            "wide_screen_mode": True,
+                            "enable_forward": True
                         },
-                        "template": "blue"
-                    },
-                    "elements": [
-                        {
-                            "tag": "div",
-                            "text": {
-                                "tag": "lark_md",
-                                "content": content
+                        "header": {
+                            "title": {
+                                "tag": "plain_text",
+                                "content": f"📰 {report_type}报告"
+                            },
+                            "template": "blue"
+                        },
+                        "elements": [
+                            {
+                                "tag": "div",
+                                "text": {
+                                    "tag": "lark_md",
+                                    "content": content
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    }
                 }
-            }
+            else:
+                # 文本消息格式
+                print(f"飞书消息将以文本形式发送 [{report_type}]")
+                message = {
+                    "msg_type": "text",
+                    "content": {
+                        "text": content
+                    }
+                }
             
             print(f"  - 准备发送到账号 {i+1}: {webhook_url[:50]}...")
             response = requests.post(webhook_url, headers=headers, json=message, timeout=10)
@@ -274,8 +285,9 @@ def send_to_feishu(
             if hasattr(response, 'text'):
                 print(f"  - 响应状态: {response.status_code}")
                 print(f"  - 响应内容: {response.text}")
-            # 打印完整的请求消息，方便调试
-            print(f"  - 请求消息: {json.dumps(message, ensure_ascii=False, indent=2)[:500]}...")
+            # 打印请求消息的关键部分，方便调试
+            print(f"  - 请求消息类型: {message['msg_type']}")
+            print(f"  - 请求消息摘要: {json.dumps(message, ensure_ascii=False, indent=2)[:500]}...")
 
 
 def send_to_dingtalk(
