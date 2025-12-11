@@ -1,4 +1,4 @@
-```
+
 # Compiled Python files
 *.pyc
 __pycache__/
@@ -37,4 +37,9 @@ htmlcov/
 # OS generated files
 .DS_Store
 Thumbs.db
-```
+
+.idea
+__pycache__
+.venv
+output
+index.html
