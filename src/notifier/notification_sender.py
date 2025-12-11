@@ -27,10 +27,11 @@ def send_to_notifications(
     from ..config.config_manager import load_config
     CONFIG = load_config()
     
+    # 初始化推送管理器
+    push_manager = PushRecordManager()
+    
     # 检查推送窗口设置
     if CONFIG["PUSH_WINDOW"]["ENABLED"]:
-        push_manager = PushRecordManager()
-        
         start_time = CONFIG["PUSH_WINDOW"]["TIME_RANGE"]["START"]
         end_time = CONFIG["PUSH_WINDOW"]["TIME_RANGE"]["END"]
         
@@ -193,8 +194,8 @@ def send_to_feishu(
         content += "🆕 新增新闻:\n"
         for source_id, titles_data in new_titles.items():
             source_name = id_to_name.get(source_id, source_id) if id_to_name else source_id
-            for title_data in titles_data.values():
-                title_content = format_title_for_platform("feishu", {**title_data, "source_name": source_name}, show_source=False)
+            for title, title_data in titles_data.items():
+                title_content = format_title_for_platform("feishu", {**title_data, "title": title, "source_name": source_name}, show_source=False)
                 content += f"  • {title_content}\n"
         content += "\n"
     
@@ -215,23 +216,66 @@ def send_to_feishu(
     
     # 发送消息
     headers = {"Content-Type": "application/json; charset=utf-8"}
-    message = {
-        "msg_type": CONFIG.get("FEISHU_MSG_TYPE", "text"),
-        "content": {
-            "text": content
-        }
-    }
+    msg_type = CONFIG.get("FEISHU_MSG_TYPE", "text")
+    
+    # 打印配置变量，方便调试
+    print(f"飞书推送配置：")
+    print(f"  - FEISHU_WEBHOOK_URL: {CONFIG['FEISHU_WEBHOOK_URL']}")
+    print(f"  - FEISHU_MSG_TYPE: {msg_type}")
+    print(f"  - webhook_urls: {webhook_urls}")
+    print(f"  - 消息长度: {len(content)} 字符")
+    print(f"  - 消息开头: {content[:100]}...")
     
     for i, webhook_url in enumerate(webhook_urls):
         if not webhook_url:
             continue
             
         try:
+            # 检查webhook_url格式
+            if not webhook_url.startswith('https://'):
+                print(f"  - 警告: webhook_url格式不正确: {webhook_url}")
+            
+            # 使用main_backup.py中的飞书推送格式
+            message = {
+                "msg_type": "interactive",
+                "card": {
+                    "config": {
+                        "wide_screen_mode": True,
+                        "enable_forward": True
+                    },
+                    "header": {
+                        "title": {
+                            "tag": "plain_text",
+                            "content": f"📰 {report_type}报告"
+                        },
+                        "template": "blue"
+                    },
+                    "elements": [
+                        {
+                            "tag": "div",
+                            "text": {
+                                "tag": "lark_md",
+                                "content": content
+                            }
+                        }
+                    ]
+                }
+            }
+            
+            print(f"  - 准备发送到账号 {i+1}: {webhook_url[:50]}...")
             response = requests.post(webhook_url, headers=headers, json=message, timeout=10)
             response.raise_for_status()
             print(f"飞书推送成功 (账号 {i+1}/{len(webhook_urls)})")
+            print(f"  - 响应状态: {response.status_code}")
+            print(f"  - 响应内容: {response.text}")
         except Exception as e:
             print(f"飞书推送失败 (账号 {i+1}/{len(webhook_urls)}): {e}")
+            # 打印响应内容，方便调试
+            if hasattr(response, 'text'):
+                print(f"  - 响应状态: {response.status_code}")
+                print(f"  - 响应内容: {response.text}")
+            # 打印完整的请求消息，方便调试
+            print(f"  - 请求消息: {json.dumps(message, ensure_ascii=False, indent=2)[:500]}...")
 
 
 def send_to_dingtalk(

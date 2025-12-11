@@ -6,6 +6,8 @@ from pathlib import Path
 import yaml
 from typing import Dict, List, Optional
 
+# 全局配置缓存，避免重复加载
+_config_cache = None
 
 # === SMTP邮件配置 ===
 SMTP_CONFIGS = {
@@ -143,7 +145,13 @@ def get_account_at_index(accounts: List[str], index: int, default: str = "") -> 
 
 
 def load_config():
-    """加载配置文件"""
+    """加载配置文件，添加缓存机制"""
+    global _config_cache
+    
+    # 如果缓存存在，直接返回
+    if _config_cache is not None:
+        return _config_cache
+    
     config_path = os.environ.get("CONFIG_PATH", "config/config.yaml")
 
     if not Path(config_path).exists():
@@ -377,5 +385,7 @@ def load_config():
         print(f"每个渠道最大账号数: {max_accounts}")
     else:
         print("未配置任何通知渠道")
-
+    
+    # 保存到缓存
+    _config_cache = config
     return config

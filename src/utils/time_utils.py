@@ -78,3 +78,16 @@ def is_first_crawl_today() -> bool:
 
     files = sorted([f for f in txt_dir.iterdir() if f.suffix == ".txt"])
     return len(files) <= 1
+
+
+def format_time_display(first_time: str, last_time: str) -> str:
+    """格式化时间显示，用于新闻统计"""
+    if first_time and last_time:
+        if first_time == last_time:
+            return first_time
+        return f"{first_time} - {last_time}"
+    elif first_time:
+        return first_time
+    elif last_time:
+        return last_time
+    return ""

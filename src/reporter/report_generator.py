@@ -114,10 +114,10 @@ def format_title_for_platform(
     """统一的标题格式化方法"""
     from ..analyzer.statistics_calculator import format_rank_display
     rank_display = format_rank_display(
-        title_data["ranks"], title_data["rank_threshold"], platform
+        title_data["ranks"], title_data.get("rank_threshold", 0), platform
     )
 
-    link_url = title_data["mobile_url"] or title_data["url"]
+    link_url = title_data.get("mobile_url") or title_data.get("url")
 
     cleaned_title = clean_title(title_data["title"])
 
